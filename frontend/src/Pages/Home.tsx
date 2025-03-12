@@ -1,6 +1,6 @@
 import { useState } from "react";
-import JoinRoom from "./JoinRoom";
-import CreateRoom from "./CreateRoom";
+import JoinRoom from "../Components/JoinRoom";
+import CreateRoom from "../Components/CreateRoom";
 
 export enum Screen {
 	HOME,
@@ -8,7 +8,7 @@ export enum Screen {
 	CREATE
 }
 
-export default function App() {
+export default function Home() {
 	const [showScreen, setShowScreen] = useState<Screen>(Screen.HOME)
 
 	function back() {
