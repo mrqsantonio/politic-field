@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import WaitingRoom from "../Components/WaitingRoom"
-import { State, Room, Player } from "../Services/RoomService"
-import dummyRoomService from "../Services/DummyRoomService"
+import { State, Room } from "../Services/RoomService"
+import DummyRoomService from "../Services/DummyRoomService"
+import PlayerService from "../Services/PlayerService"
 
 type GameParams = {
 	id: string
@@ -15,21 +16,27 @@ export default function Game() {
 
 	const gameParams = useParams<GameParams>()
 
-	const roomService = dummyRoomService
+	const roomService = DummyRoomService
+	const playerService = PlayerService
 
 	function onLeave() {
-		// Send a leave request to server
-		// Change path to /
+		if (room) {
+			const authToken = playerService.getToken()
+			if (authToken) {
+				roomService.leaveRoom(room.id, authToken)
+			}
+		}
 		navigate("/")
 	}
 
 	function onReady() {
-		// Send ready signal to server
+		console.log("Starting...")
 		if (room) {
-			const playerString = window.localStorage.getItem("player")
-			if (playerString) {
-				const player: Player = JSON.parse(playerString)
-				roomService.markReady(room.id, player.token)
+			console.log("Authenticating user...")
+			const authToken = playerService.getToken()
+			if (authToken) {
+				roomService.markReady(room.id, authToken)
+				console.log("Marked as ready!")
 				return;
 			}
 			// If code reaches here operation as failed this means the player should be removed from the room
@@ -51,15 +58,27 @@ export default function Game() {
 				console.error(error)
 			}
 
-			roomService.roomUpdater(gameParams.id, onUpdate, onError)
+			const roomUpdater = roomService.roomUpdater(gameParams.id, onUpdate, onError)
+
+			return () => {
+				roomUpdater.unsubscribe()
+			}
 		}
 	}, [gameParams.id])
 
-	console.log("Rendering Game", room)
+	// FIXME: room.state update isn't rendering the new component
 	if (room) {
+		console.log("State:", State[room.state])
 		switch(room.state) {
 			case State.Waiting:
 				return <WaitingRoom room={room} onLeave={onLeave} onReady={onReady} />
+			case State.Topic:
+				return (
+					<div>
+						<h1>Choose a topic:</h1>
+						<input type="text" placeholder="Topic" />
+					</div>
+				)
 			default:
 				return (
 					<>
@@ -68,8 +87,4 @@ export default function Game() {
 				)
 		}
 	}
-	return (
-		<>
-		</>
-	)
 }

@@ -1,6 +1,8 @@
 import { useState } from "react"
-import dummyRoomService from "../Services/DummyRoomService"
+import DummyRoomService from "../Services/DummyRoomService"
 import { useNavigate } from "react-router"
+import PlayerService, { PlayerInfo } from "../Services/PlayerService"
+import { Settings } from "../Services/RoomService"
 
 type CreateRoomProps = {
 	back: () => void
@@ -10,22 +12,20 @@ export default function CreateRoom({ back }: CreateRoomProps) {
 	const [topicTime, setTopicTime] = useState<number>(20)
 	const [guessTime, setGuessTime] = useState<number>(20)
 
-	const roomService = dummyRoomService
+	const roomService = DummyRoomService
+	const playerService = PlayerService
 	const navigate = useNavigate()
 
-
 	function onCreate() {
-		const newRoom = roomService.createRoom({
+		const settings: Settings = {
 			topicTime,
 			guessTime
-		})
-		if (newRoom) {
-			window.localStorage.setItem("player", JSON.stringify({
-				name: "Ramiro",
-				token: newRoom.player_id,
-				icon: 0
-			}))
-			navigate(`/${newRoom.room_id}`)
+		}
+		const playerInfo: PlayerInfo = playerService.getPlayer()
+		const roomInvite = roomService.createRoom(settings, playerInfo)
+		if (roomInvite) {
+			playerService.joinRoom(roomInvite)
+			navigate(`/${roomInvite.roomID}`)
 		}
 	}
 

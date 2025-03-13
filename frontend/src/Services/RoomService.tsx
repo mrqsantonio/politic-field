@@ -5,6 +5,8 @@
 // [POST]    /room/<id>/leave              - Removes current user
 // [POST]    /room/<id>/ready              - Sets the current user as ready
 
+import { PlayerInfo } from "./PlayerService"
+
 export type Settings = {
     topicTime: number,
     guessTime: number
@@ -35,9 +37,9 @@ export type Guess = {
     y: number
 }
 
-export type NewRoom = {
-    room_id: string,
-    player_id: number
+export type RoomInvite = {
+    roomID: string,
+    authToken: string
 }
 
 export type Room = {
@@ -53,15 +55,17 @@ export type Room = {
 export type RoomUpdater = {
     roomID: string,
     onUpdate: (room: Room) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    unsubscribe: () => void
 }
 
 export interface RoomService {
     getRoomSettings: () => Settings,
-    createRoom: (settings: Settings) => NewRoom,
+    createRoom: (settings: Settings, playerInfo: PlayerInfo) => RoomInvite,
     // updateRoomSettings: (settings: Settings) => boolean,
+    // updatePlayerInfo: (playerInfo: PlayerInfo) => boolean,
     roomUpdater: (roomID: string, onUpdate: (room: Room) => void, onError: (error: string) => void) => RoomUpdater,
-    joinRoom: (roomID: string) => string, // This should return an sucess/error messsage (returns playerToken)
+    joinRoom: (roomID: string, player: PlayerInfo) => RoomInvite, // This should return an sucess/error messsage (returns playerToken)
     leaveRoom: (roomID: string, playerToken: string) => boolean, // This should return an sucess/error messsage
     markReady: (roomID: string, playerToken: string) => boolean, // This should  return an sucess/error messsage
     commitTopic: (roomID: string, playerToken: string, topic: Topic) => boolean, // This should  return an sucess/error messsage

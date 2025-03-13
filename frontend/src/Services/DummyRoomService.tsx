@@ -1,24 +1,17 @@
-import { NewRoom, Room, RoomService, Settings, State, Player, Topic, Guess, RoomUpdater } from './RoomService'
+import { PlayerInfo } from './PlayerService'
+import { RoomInvite, Room, RoomService, Settings, State, Player, Topic, Guess, RoomUpdater } from './RoomService'
 
 const rooms: Room[] = []
 
 const updaters: RoomUpdater[] = []
 
-function generatePlayer(players: Player[], name?: string, icon?: number): Player {
 
-    function generatePlayerToken(players: Player[]): string {
-        let newToken = ""
-        do {
-            newToken = Math.random().toString(36).slice(2, 18)
-        } while(players.find((player) => { return player.token == newToken }))
-        return newToken
-    }
-
-    return {
-        name: name ? name : generateName(),
-        token: generatePlayerToken(players),
-        icon: icon ? icon : Math.round(Math.random() * 15)
-    }
+function generatePlayerToken(players: Player[]): string {
+    let newToken = ""
+    do {
+        newToken = Math.random().toString(36).slice(2, 18)
+    } while(players.find((player) => { return player.token == newToken }))
+    return newToken
 }
 
 function generateRoomID(): string {
@@ -38,17 +31,7 @@ function updateRoom(roomIndex: number, room: Room) {
     })
 }
 
-function generateName(): string {
-    const names = ["José", "Mário", "André", "Pedro", "Luís", "Rui", "Paulo", "Rita", "Mariana", "Bruno"]
-    const surnames = ["Aguiar-Branco", "Machado", "Ventura", "Pinto", "Rocha", "Montenegro", "Raimundo", "Cruz", "Mortágua", "Matias"]
-    function randomElement(list: string[]): string {
-        const random = Math.floor(Math.random() * list.length)
-        return list[random]
-    }
-    return `${randomElement(names)} ${randomElement(surnames)}`
-}
-
-const dummyRoomService: RoomService = {
+const DummyRoomService: RoomService = {
     getRoomSettings: function (): Settings {
         return {
             topicTime: 5,
@@ -56,22 +39,24 @@ const dummyRoomService: RoomService = {
         }
     },
     
-    createRoom: function (settings: Settings): NewRoom {
+    createRoom: function (settings: Settings, playerInfo: PlayerInfo): RoomInvite {
+        const player = {
+            ...playerInfo,
+            token: generatePlayerToken([])
+        }
         const newRoom: Room = {
             id: generateRoomID(),
             settings,
             state: State.Waiting,
             round: 0,
-            players: [
-                generatePlayer([])
-            ],
+            players: [ player ],
             topics: [],
             guesses: []
         }
-        rooms.push(newRoom)
+        updateRoom(rooms.length, newRoom)
         return {
-            room_id: newRoom.id,
-            player_id: 0 // Shouldn't this be the user token?
+            roomID: newRoom.id,
+            authToken: player.token
         }
     },
 
@@ -80,9 +65,14 @@ const dummyRoomService: RoomService = {
         const updater: RoomUpdater = {
             roomID,
             onUpdate,
-            onError
+            onError,
+            unsubscribe: () => {}
         }
-        updaters.push(updater)
+        updater.unsubscribe = () => {
+            console.log("[Service] Unsubscribing...", roomID)
+            const index = updaters.findIndex((updater) => { return updater.roomID == roomID })
+            updaters.splice(index, 1)
+        }
         const roomIndex = rooms.findIndex((room) => { return room.id == roomID })
         if (roomIndex >= 0) {
             onUpdate(rooms[roomIndex])
@@ -91,35 +81,51 @@ const dummyRoomService: RoomService = {
         return updater
     },
 
-    joinRoom: function (roomID: string): string {
+    joinRoom: function (roomID: string, playerInfo: PlayerInfo): RoomInvite {
         const room = rooms.find((room) => { return room.id == roomID })
         if (room) {
-            const player: Player = generatePlayer(room.players)
-            room.players.push(player)
-            return player.token
+            const player: Player = {
+                ...playerInfo,
+                token: generatePlayerToken(room.players)
+            }
+            const roomIndex = rooms.findIndex((room) => { return room.id == roomID })
+            if (roomIndex >= 0) {
+                room.players.push(player)
+                updateRoom(roomIndex, room)
+                return {
+                    roomID: roomID,
+                    authToken: player.token
+                }
+            }
         }
-        return "" // Currently returning a empty string should mean that joining a room failed for some reason
+        return {
+            roomID: "",
+            authToken: ""
+
+        } // Currently returning a empty string should mean that joining a room failed for some reason
     },
 
     leaveRoom: function (roomID: string, playerToken: string): boolean {
-        const room = rooms.find((room) => { return room.id == roomID })
-        if (room) {
+        const roomIndex = rooms.findIndex((room) => { return room.id == roomID })
+        if (roomIndex >= 0) {
+            const room = rooms[roomIndex]
             const playerIndex = room.players.findIndex((player) => { return player.token == playerToken })
             if (playerIndex >= 0) {
                 room.players.splice(playerIndex, 1)
+                updateRoom(roomIndex, room)
                 return true
             }
         }
         return false
     },
 
-    markReady: function (roomID: string, playerToken: string): boolean {
+    markReady: function (roomID: string, _playerToken: string): boolean {
         const room = rooms.find((room) => { return room.id == roomID })
-        console.log(rooms)
         if (room) {
             const roomIndex = rooms.findIndex((r) => { return r.id == room.id })
             room.state = State.Topic
             updateRoom(roomIndex, room)
+            return true
         }
         return false
     },
@@ -153,4 +159,4 @@ const dummyRoomService: RoomService = {
     }
 }
 
-export default dummyRoomService
+export default DummyRoomService
