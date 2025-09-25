@@ -42,6 +42,11 @@ export type RoomInvite = {
     authToken: string
 }
 
+export type RoomError = {
+    id: number,
+    error: string
+}
+
 export type Room = {
     id: string,
     settings: Settings,
@@ -65,9 +70,9 @@ export interface RoomService {
     // updateRoomSettings: (settings: Settings) => boolean,
     // updatePlayerInfo: (playerInfo: PlayerInfo) => boolean,
     roomUpdater: (roomID: string, onUpdate: (room: Room) => void, onError: (error: string) => void) => RoomUpdater,
-    joinRoom: (roomID: string, player: PlayerInfo) => RoomInvite, // This should return an sucess/error messsage (returns playerToken)
-    leaveRoom: (roomID: string, playerToken: string) => boolean, // This should return an sucess/error messsage
-    markReady: (roomID: string, playerToken: string) => boolean, // This should  return an sucess/error messsage
-    commitTopic: (roomID: string, playerToken: string, topic: Topic) => boolean, // This should  return an sucess/error messsage
-    commitGuess: (roomID: string, playerToken: string, guess: Guess) => boolean // This should  return an sucess/error messsage
+    joinRoom: (roomID: string, player: PlayerInfo) => RoomInvite | RoomError,
+    leaveRoom: (roomID: string, playerToken: string) => true | RoomError,
+    markReady: (roomID: string, playerToken: string) => true | RoomError,
+    commitTopic: (roomID: string, playerToken: string, topic: Topic) => true | RoomError,
+    commitGuess: (roomID: string, playerToken: string, guess: Guess) => true | RoomError
 }

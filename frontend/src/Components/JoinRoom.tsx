@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { RoomInvite} from "../Services/RoomService"
 import DummyRoomService from "../Services/DummyRoomService"
 import { useNavigate } from "react-router"
 import PlayerService, { PlayerInfo } from "../Services/PlayerService"
@@ -39,7 +40,8 @@ export default function JoinRoom({ back }: JoinRoomProps) {
 		if(roomID && roomID.length == 6) {
 			const playerInfo: PlayerInfo = playerService.getPlayer()
 			const roomInvite = roomService.joinRoom(roomID, playerInfo)
-			if (roomInvite) {
+			console.log(roomInvite)
+			if (roomInvite && !('error' in roomInvite)) {
 				playerService.joinRoom(roomInvite)
 				navigate(`/${roomInvite.roomID}`)
 			}

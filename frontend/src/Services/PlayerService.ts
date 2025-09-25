@@ -1,4 +1,4 @@
-import { Player, RoomInvite } from "./RoomService"
+import { RoomInvite } from "./RoomService"
 
 export type PlayerInfo = {
     name: string,
