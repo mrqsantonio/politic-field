@@ -1,5 +1,5 @@
 [package]
-name = "hello"
+name = "politic-field"
 edition = "2021"
 version = "0.0.0"
 publish = false
